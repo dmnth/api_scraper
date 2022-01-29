@@ -3,7 +3,7 @@
 import requests
 import aiohttp
 import asyncio
-from create_mmsi import MMSI
+from .create_mmsi import MMSI
 
 # add response json filter for unwanter vessel types
 # create a db to frite stuff to
@@ -23,16 +23,21 @@ class VesselScraper:
         self.country = country
         self.service = service
 
+
     def set_headers(self, custom_headers=None):
         if not custom_headers:
             VesselScraper.config['headers'].update({'User-Agent': 'Mozilla/5.0'})
+
+    def set_url(self, url):
+        if not hasattr(self, '__url'):
+            self.__url = url
 
 
     async def make_requests(self):
         connector = aiohttp.TCPConnector(force_close=True)
         async with aiohttp.ClientSession(connector=connector) as session:
             for mmsi in self._mmsi:
-                async with session.get(f'{VesselScraper.config["url"]}{mmsi}', headers=VesselScraper.config['headers']) as result:
+                async with session.get(f'{self.__url}{mmsi}', headers=VesselScraper.config['headers']) as result:
                     print(result.status)
                     vessel = await result.json()
                     if vessel['type'] not in ['Unknown', 'Unknown type', 'Fishing vessel', 'Pleasure craft']:
@@ -52,7 +57,7 @@ class VesselScraper:
 
 
 if __name__ == "__main__":
-    scraper = VesselScraper('Panama', 'A')
+    scraper = VesselScraper('Panama', 'C')
     scraper.create_mmsi_pool()
     scraper.set_headers()
     scraper.run()

@@ -30,7 +30,7 @@ class Service:
 
 class MID:
     
-    mids_db = json.load(open(os.path.abspath('MIDs') + '/mids.json')) 
+    mids_db = json.load(open(os.path.abspath('src/MIDs') + '/mids.json')) 
 
     def __init__(self):
         self.country_mids = [] 
