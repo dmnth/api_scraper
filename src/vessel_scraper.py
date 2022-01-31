@@ -4,6 +4,7 @@ import requests
 import aiohttp
 import asyncio
 from .create_mmsi import MMSI
+from time import perf_counter
 
 # add response json filter for unwanter vessel types
 # create a db to frite stuff to
@@ -18,6 +19,7 @@ class VesselScraper:
     def __init__(self, country, service):
         self.country = country
         self.service = service
+        self.found_vessels = []
 
     def set_url(self, url):
         if not hasattr(self, '__url'):
@@ -35,11 +37,18 @@ class VesselScraper:
                 async with session.get(f'{self.__url}{mmsi}', headers=self.__headers) as result:
                     print(result.status)
                     vessel = await result.json()
+                    self.found_vessels.append(vessel)
+                    if len(self.found_vessels) == 34:
+                        return
                     if vessel['type'] not in ['Unknown', 'Unknown type', 'Fishing vessel', 'Pleasure craft']:
                         print(vessel)
 
     def run(self):
-        asyncio.run(self.make_requests())
+        try:
+            asyncio.run(self.make_requests())
+        except:
+            KeyboardInterrupt('Thats all folks!')
+        
 
     def write_to_db(self, data):
         pass

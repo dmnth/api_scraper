@@ -82,7 +82,9 @@ class MMSI:
         else:
             # run itertools for repeat = 6
             return Service.gen_a(self.mid[0])
-    
+
+                
+        
     
 
 if __name__ == "__main__":
