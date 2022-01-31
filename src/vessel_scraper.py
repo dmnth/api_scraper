@@ -10,10 +10,6 @@ from .create_mmsi import MMSI
 class VesselScraper:
 
     banned_items = []
-    config = {
-            'headers': requests.utils.default_headers(),
-            'url': 'https://www.vesselfinder.com/api/pub/click/'
-            }
     allowd_vessels = []
 
     # Country and service are needed to degenerate
@@ -23,21 +19,20 @@ class VesselScraper:
         self.country = country
         self.service = service
 
-
-    def set_headers(self, custom_headers=None):
-        if not custom_headers:
-            VesselScraper.config['headers'].update({'User-Agent': 'Mozilla/5.0'})
-
     def set_url(self, url):
         if not hasattr(self, '__url'):
             self.__url = url
+
+    def set_headers(self, headers):
+        if not hasattr(self, '__headers'):
+            self.__headers = headers
 
 
     async def make_requests(self):
         connector = aiohttp.TCPConnector(force_close=True)
         async with aiohttp.ClientSession(connector=connector) as session:
             for mmsi in self._mmsi:
-                async with session.get(f'{self.__url}{mmsi}', headers=VesselScraper.config['headers']) as result:
+                async with session.get(f'{self.__url}{mmsi}', headers=self.__headers) as result:
                     print(result.status)
                     vessel = await result.json()
                     if vessel['type'] not in ['Unknown', 'Unknown type', 'Fishing vessel', 'Pleasure craft']:

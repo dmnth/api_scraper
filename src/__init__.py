@@ -13,7 +13,7 @@ def create_scraper(config):
     scraper = VesselScraper('Panama', 'M')
     scraper.set_url(config.url)
     scraper.create_mmsi_pool()
-    scraper.set_headers()
+    scraper.set_headers(config.headers)
     return scraper 
 
-scraper = create_scraper(config['default'])
+scraper = create_scraper(config['default']())
