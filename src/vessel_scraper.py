@@ -38,7 +38,7 @@ class VesselScraper:
                     print(result.status)
                     vessel = await result.json()
                     self.found_vessels.append(vessel)
-                    if len(self.found_vessels) == 34:
+                    if len(self.found_vessels) == 79:
                         return
                     if vessel['type'] not in ['Unknown', 'Unknown type', 'Fishing vessel', 'Pleasure craft']:
                         print(vessel)

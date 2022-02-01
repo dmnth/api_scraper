@@ -8,10 +8,13 @@ import itertools
 import aiohttp
 from time import perf_counter
 import asyncio
+import concurrent.futures
 # RTFM for this:
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import requests
 
+
+# Rework this mess into a helper functions - class thingy
 # Handle multiple MID values at once in list format
 # Pop while list not empty
 # list of lenght 1 is still a list and can be popped
@@ -42,16 +45,98 @@ def read_json(file):
     result =json.load(f)
     return result
 
+def simple_iterations(mid_list):
+    counter = 0
+    for mid in mid_list:
+        for dec in itertools.product(range(0, 10), repeat=3):
+            response = requests.get(f'{url}{mid}{dec}000', headers=headers)
+            counter += 1
+            if counter == 79:
+                print('11 seconds')
+                return
+            print(response)
 
-def generate_mmsi_bcm(mid):
-    for dec in itertools.product(range(0, 10), repeat=3):
-        mmsi = mid + ''.join(map(str, dec)) + '000'
-        mmsi_numbers.append(mmsi)
-        print(f'Processing mmsi {mmsi}')
-        if len(mmsi_numbers) == 34:
-            raise ValueError()
-        yield mmsi
 
+
+vessels = []
+async def generate_mmsi_bcm(mid):
+    connector = aiohttp.TCPConnector(force_close=True)
+    responses = 0
+    start = perf_counter()
+    try:
+        async with aiohttp.ClientSession(connector=connector) as session:
+            for dec in itertools.product(range(0, 10), repeat=3):
+                responses += 1
+                mmsi = mid + ''.join(map(str, dec)) + '000'
+                mmsi_numbers.append(mmsi)
+                print(f'Processing mmsi {mmsi} {responses}')
+                print(mmsi)
+                async with session.get(f'{url}{mmsi}', headers=headers) as result:
+                    print(result.status)
+                    vessel = await result.json()
+                    vessels.append(vessel)
+                    print(vessels)
+    except KeyboardInterrupt:
+        end = perf_counter()
+        print(f' waster {end - start:.2f} on {vessels}')
+
+out = []
+def make_threaded_requests(mid_list):
+    CONNECTIONS = 100
+    TIMEOUT = 5
+    start =  perf_counter()
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=CONNECTIONS) as executor:
+            future_to_mmsi = (executor.submit(asyncio.run(generate_mmsi_bcm(mid))) for mid in mid_list)
+            for future in concurrent.futures.as_completed(future_to_mmsi):
+                try:
+                    data = future.result()
+                except Exception as exc:
+                    data = str(type(exc))
+                finally:
+                    out.append(data)
+    except KeyboardInterrupt:
+        end = perf_counter()
+        print(f'took {end-start:.2f} seconds')
+
+
+###############################################################
+def make_single_request(mmsi):
+    result = requests.get(f'{url}{mmsi}', headers=headers)
+    print(result)
+
+def s_generate_mmsi_bcm(mid):
+    start = perf_counter()
+    try:
+        for dec in itertools.product(range(0, 10), repeat=3):
+            mmsi = mid + ''.join(map(str, dec)) + '000'
+            mmsi_numbers.append(mmsi)
+            print(f'Processing mmsi {mmsi}')
+            print(mmsi)
+            make_single_request(mmsi)
+    except KeyboardInterrupt:
+        end = perf_counter()
+        print(f' waster {end - start:.2f} on {vessels}')
+
+def make_threaded_single_requests(mid_list):
+    CONNECTIONS = 100
+    TIMEOUT = 5
+    start =  perf_counter()
+    try:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=CONNECTIONS) as executor:
+            future_to_mmsi = (executor.submit(s_generate_mmsi_bcm(mid)) for mid in mid_list)
+            for future in concurrent.futures.as_completed(future_to_mmsi):
+                try:
+                    data = future.result()
+                except Exception as exc:
+                    data = str(type(exc))
+                finally:
+                    out.append(data)
+    except KeyboardInterrupt:
+        end = perf_counter()
+        print(f'took {end-start:.2f} seconds')
+
+################################################################################################        
 async def make_requests(mid):
     connector = aiohttp.TCPConnector(force_close=True)
     async with aiohttp.ClientSession(connector=connector) as session:
@@ -93,11 +178,8 @@ def gen_panama_vessels(mid_list):
 def make_requests(mmsi):
     response = requests.get(f'{url}{mmsi}', headers=headers)
 
-session = requests.Session()
-session.mount(requests.adapters.HTTPAdapter(pool_maxsize=THREAD_POOL, max_retries==3, pool_block=True))
-def gen_panama_vessels_v2(mid_list):
-    with ThreadPoolExecutor(max_workers=THREAD_POOL) as executor:
-
+mid_file= read_json(path_to_file) 
+panama_mids = get_mid_list('Panama', mid_file)
 
 if __name__ == "__main__":
     mid_file= read_json(path_to_file) 
@@ -106,7 +188,6 @@ if __name__ == "__main__":
     georgia_mids = get_mid_list('Georgia', mid_file)
     dickland_mids = get_mid_list('Dickland', mid_file)
     start = perf_counter()
-    gen_panama_vessels(panama_mids)
+    simple_iterations(panama_mids)
     end = perf_counter()
     print(f'wasted {end-start: .2f} seconds of my life on {len(mmsi_numbers)} MMSI"s')
-    print(panama_mids)
