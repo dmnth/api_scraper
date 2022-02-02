@@ -10,17 +10,16 @@ from queue import Queue
 from dataclasses import dataclass
 
 
-@dataclass
-class ImportantData:
-    URL: str = 'https://www.vesselfinder.com/api/pub/click/'
-    HEADERS: dict = {'User-Agent': "Mozilla/5.0"}
-    FILTER: dict = {
-            'types': [
-                'unknown',
-                'unknown type',
-                ],
-            'year': [2003],
-            }
+URL = 'https://www.vesselfinder.com/api/pub/click/'
+HEADERS = {'User-Agent': "Mozilla/5.0"}
+FILTER = {
+        'types': [
+            'unknown',
+            'unknown type',
+            'other type',
+            ],
+        'year': [2003],
+        }
 
 jobs = Queue()
 found_vessels = []
