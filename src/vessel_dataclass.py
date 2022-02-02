@@ -10,34 +10,17 @@ class Vessel:
     country: str
     type: str
     dest: str
+    dead_weight: int
+    gross_tonnage: int
     imo: int
     mmsi: int
-    built: datetime.date() 
+    date_built: datetime.date() 
 
     def _post__init__(self):
-        super().__init__('sort_index', self.gross_tonnage)
+        super().__init__('sort_index', self.date_built)
 
     def __str__(self):
         return f'{self.name} {self.type} {self.imo}'
-
-@dataclass
-class CargoVessel(Vessel):
-    dead_weight: int
-    gross_tonnage: int
-
-@dataclass
-class FishingVessel(Vessel):
-    pass
-
-@dataclass
-class Refrigerator(CargoVessel):
-    pass
-
-@dataclass
-class CruiseVessel(Vessel):
-    pass
-
-
 
 if __name__ == "__main__":
 

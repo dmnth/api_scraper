@@ -7,16 +7,20 @@ from time import perf_counter
 from threading import Thread
 from gen_mmsi import panama_mids
 from queue import Queue 
+from dataclasses import dataclass
 
-URL = 'https://www.vesselfinder.com/api/pub/click/'
-HEADERS = {'User-Agent': "Mozilla/5.0"}
-FILTER = {
-        'types': [
-            'unknown',
-            'unknown type',
-            ],
-        'year': [2003],
-        }
+
+@dataclass
+class ImportantData:
+    URL: str = 'https://www.vesselfinder.com/api/pub/click/'
+    HEADERS: dict = {'User-Agent': "Mozilla/5.0"}
+    FILTER: dict = {
+            'types': [
+                'unknown',
+                'unknown type',
+                ],
+            'year': [2003],
+            }
 
 jobs = Queue()
 found_vessels = []
@@ -51,12 +55,17 @@ def get_shit_done():
     for i in range(3):
         worker.join()
 
+def read_json(vessel_file):
+    with open(vessel_file, 'r') as data:
+        vessels = json.load(data)
+    return vessels
+
 def write_json(vessel_data):
     with open('panama_vessels.json', 'w') as outfile:
         outfile.write(vessel_data)
 
 
-
+'''
 
 if __name__ == "__main__":
     create_jobs(panama_mids)
@@ -72,4 +81,4 @@ if __name__ == "__main__":
     end = perf_counter()
     print(found_vessels)
     print(f'Today i wasted {end-start:.2f} seconds on MMSI {len(found_vessels)}')
-
+'''
