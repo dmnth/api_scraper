@@ -32,6 +32,9 @@ search_data = {
         'AdvancedSearch': '',
         'fs': 'HomePage',
         }
+detailed_search_page = eq_config.base_url + \
+'EquasisWeb/restricted/ShipInfo?fs=Search'
+detailed_search_data = {'P_IMO': None }
 
 def make_request(config, imo):
     with requests.Session() as session:
@@ -44,9 +47,12 @@ def make_request(config, imo):
         search_data['P_ENTREE_HOME'] = imo
         search_data['P_ENTREE_HOME_HIDDEN'] = imo
         test_search = session.post(search_page, data=search_data)
-        print(test_search.text)
+        detailed_search_data['P_IMO'] = imo
+        detailed_search = session.post(detailed_search_page, data=detailed_search_data)
+        print(detailed_search.text)
 
 
 
 if __name__ == "__main__":
     make_request(eq_config, '9836048')
+    print(detailed_search_page)
