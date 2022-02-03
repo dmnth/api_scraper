@@ -49,10 +49,12 @@ def make_request(config, imo):
         test_search = session.post(search_page, data=search_data)
         detailed_search_data['P_IMO'] = imo
         detailed_search = session.post(detailed_search_page, data=detailed_search_data)
-        print(detailed_search.text)
+        result = detailed_search.content.decode()
+        print('Registered owner' in result)
+        print(result)
 
 
 
 if __name__ == "__main__":
-    make_request(eq_config, '9836048')
+    make_request(eq_config, '9850874')
     print(detailed_search_page)
