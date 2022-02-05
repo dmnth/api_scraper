@@ -4,11 +4,13 @@ import requests
 import threading
 import json
 import sys
+import os
 from time import perf_counter
 from threading import Thread
 from gen_mmsi import panama_mids
 from queue import Queue 
 from dataclasses import dataclass
+from threads import StoppableThread
 
 # Forgot to shut burp's proxy down :(
 
@@ -25,29 +27,31 @@ FILTER = {
 
 jobs = Queue()
 found_vessels = []
-outfile = 'scraped_ships/test.json'
+data_file_path= 'scraped_ships/test_2.json'
 
 # TODO: Find proper way to stop threaded script
 # Capture disconnect exception
 # Find way to store progress if exception arised
+# Capture network exceptions and write stuff on disconnect
 
 def make_requests(url, q):
-    counter = 0
-    with open(outfile, 'w') as file:
-            while not q.empty() and is_running == True:
-                try:
-                     digits = q.get()
-                     print(digits)
-                     response = requests.get(f'{URL}{digits}000', headers=HEADERS)
-                     if response:
-                         vessel = response.json()
-                     if vessel['type'].lower() not in FILTER['types']: 
-                         # Adding mmsi to vessel info
-                         vessel['mmsi'] = int(digits) 
-                         found_vessels.append(vessel)
-                         # print(vessel['type'], vessel['name'])
-                except KeyboardInterrupt:
-                    break
+    with open(data_file_path, 'w') as outfile:
+        while not q.empty() or len(found_vessels) != 12: 
+             digits = q.get()
+             response = requests.get(f'{URL}{digits}000', headers=HEADERS)
+             if response:
+                 vessel = response.json()
+                 if vessel['type'].lower() not in FILTER['types']: 
+                     # Adding mmsi to vessel info
+                     vessel['mmsi'] = int(digits) 
+                     vessels_object = json.dumps(vessel)
+                     found_vessels.append(vessels_object)
+                     print(vessel['name'])
+             else:
+                print("bad request")
+                break
+
+
 
 
 def create_jobs(mid_list):
@@ -60,13 +64,10 @@ def create_jobs(mid_list):
     print(f'there are {jobs.unfinished_tasks} vessels awaiting to be stored in database')
 
 def get_shit_done():
-    if stop_threads == True:
-        return
-    for i in range(3):
-        print(jobs)
-        worker = threading.Thread(target=make_requests, args=(URL, jobs)) 
+    for i in range(8):
+        worker = StoppableThread(target=make_requests, args=(URL, jobs)) 
         worker.start()
-    for i in range(3):
+    for i in range(8):
         worker.join()
 
 def read_json(vessel_file):
@@ -75,25 +76,20 @@ def read_json(vessel_file):
     return vessels
 
 def write_json(vessel_data):
+    vessels_object = json.dumps(found_vessels, indent=4)
     with open('panama_vessels.json', 'w') as outfile:
-        outfile.write(vessel_data)
-
-
+        outfile.write(vessels_object)
 
 if __name__ == "__main__":
     create_jobs(panama_mids)
     start = perf_counter()
-    stop_threads = False
     try:
         print('Starting')
         get_shit_done()
     except KeyboardInterrupt:
-        stop_threads = True
         print("writing stuff")
-        with open(outfile, 'w') as file:
+        with open(data_file_path, 'w') as out:
             vessels_object = json.dumps(found_vessels, indent=4)
-            file.write(vessels_object)
-        
-        
+            out.write(vessels_object)
     end = perf_counter()
     print(f'Today i wasted {end-start:.2f} seconds on MMSI {len(found_vessels)}')
