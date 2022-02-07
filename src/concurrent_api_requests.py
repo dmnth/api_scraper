@@ -2,6 +2,9 @@
 import itertools
 import requests
 import json
+import sys
+import time
+import curses
 from time import perf_counter
 #from gen_mmsi import panama_mids
 from queue import Queue 
@@ -11,17 +14,26 @@ from enum_mmsi import panama_mids
 URL = 'https://www.vesselfinder.com/api/pub/click/'
 HEADERS = {'User-Agent': "Mozilla/5.0"}
 FILTER = {
-        'types': [
+        'types_restrict': [
             'unknown',
             'unknown type',
             'other type',
+            'pleasure craft',
+            'sailing vessel',
+            'military ops',
+            'tug',
             ],
-        'year': [2003],
+        'types_allowed': [
+            'Fishing Vessel',
+            ],
+        'year': [
+            2003
+            ],
         }
 
 jobs = Queue()
 found_vessels = []
-data_file_path= 'scraped_ships/test_2.json'
+data_file_path= 'cli_test_2.json'
 
 # TODO: Find proper way to eaded script
 # Capture disconnect exception
@@ -35,21 +47,43 @@ data_file_path= 'scraped_ships/test_2.json'
 
 # Returns legit mmsi number as result
 
+
+vessel_types = []
 def make_requests(url, q):
-    with open(data_file_path, 'w') as outfile:
+    with open(data_file_path, 'w') as outfile, open('common_vessel_types.txt', 'w') as textfile:
         while not q.empty() or len(found_vessels) != 12: 
              digits = q.get()
              response = requests.get(f'{URL}{digits}000', headers=HEADERS)
              if response:
                  vessel = response.json()
-                 if vessel['type'].lower() not in FILTER['types']: 
+                 # Right now dont add length/width sorting.
+                 if vessel['type'].lower() not in FILTER['types_restrict'] and vessel['imo'] !=0: 
                      # Adding mmsi to vessel info
                      vessel['mmsi'] = int(digits) 
                      vessels_object = json.dumps(vessel)
                      found_vessels.append(vessel)
+                     yield vessel
              else:
                 print("bad request")
                 break
+
+common_types = {
+        'crude oil tanker': 0,
+        'bulk carrier': 0,
+        'fishing vessel': 0,
+        'container ship': 0,
+        'general cargo ship': 0,
+        }
+
+
+def printout():
+    for vessel in make_requests(URL, jobs):
+        t = vessel['type'].lower()
+        if t in common_types.keys():
+            common_types[t] += 1
+        # Curses module stuff goes here 
+
+
 
 def create_jobs(mid_list, repeats=3):
     for mid in mid_list:
@@ -58,7 +92,8 @@ def create_jobs(mid_list, repeats=3):
 
 def start_threads():
     for i in range(10):
-        worker = StoppableThread(target=make_requests, args=(URL, jobs)) 
+        # Setting daemon to true for prettyer output ^_^
+        worker = StoppableThread(target=printout, daemon=True) 
         worker.start()
     for i in range(10):
         worker.join()
@@ -71,12 +106,14 @@ def get_vessel_data(country_ids, out_file, repeats=3):
         print('[+] Sending requests')
         start_threads()
     except KeyboardInterrupt:
-        print("writing stuff")
+        print("\nwriting stuff")
         vessels_object = json.dumps(found_vessels, indent=4)
         with open(out_file, 'w') as out:
             out.write(vessels_object)
+        with open('common_vessel_types.txt', 'w') as out:
+            out.writelines(vessel_types)
     end = perf_counter()
-    print(f'Today i wasted {end-start:.2f} seconds on MMSI {len(found_vessels)}')
+    print(f' Found {len(found_vessels)} vessels in {end-start:.2f} seconds')
 
 
 def read_json(vessel_file):
@@ -91,4 +128,4 @@ def write_json(file_name, vessel_data):
         outfile.write(vessels_object)
 
 if __name__ == "__main__":
-    main('test.json', panama_mids, 3)
+    get_vessel_data(panama_mids, data_file_path, 3)

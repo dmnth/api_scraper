@@ -2,11 +2,9 @@
 
 import json
 from datetime import datetime
-from data import DefaultConfig, read_json
 
 vessels_json = 'panama_vessels.json'
 current_year = datetime.today().year
-config = DefaultConfig()
 
 
 
