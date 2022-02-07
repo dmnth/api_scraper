@@ -1,18 +1,11 @@
 #! /usr/bin/env python3
 import itertools
 import requests
-import threading
 import json
-import sys
-import os
 from time import perf_counter
-from threading import Thread
 from gen_mmsi import panama_mids
 from queue import Queue 
-from dataclasses import dataclass
 from threads import StoppableThread
-
-# Forgot to shut burp's proxy down :(
 
 URL = 'https://www.vesselfinder.com/api/pub/click/'
 HEADERS = {'User-Agent': "Mozilla/5.0"}
@@ -34,6 +27,13 @@ data_file_path= 'scraped_ships/test_2.json'
 # Find way to store progress if exception arised
 # Capture network exceptions and write stuff on disconnect
 
+# This script generates decartian product len(3) range(0, 10) and 
+# add it as part of mmsi number to a pre-made format string,
+# that is same fro vessels equipped with inmarsat earth station
+# that supports services B, C or M
+
+# Returns legit mmsi number as result
+
 def make_requests(url, q):
     with open(data_file_path, 'w') as outfile:
         while not q.empty() or len(found_vessels) != 12: 
@@ -46,29 +46,36 @@ def make_requests(url, q):
                      vessel['mmsi'] = int(digits) 
                      vessels_object = json.dumps(vessel)
                      found_vessels.append(vessels_object)
-                     print(vessel['name'])
              else:
                 print("bad request")
                 break
-
-
-
 
 def create_jobs(mid_list):
     for mid in mid_list:
         for job in itertools.product(range(0, 10), repeat=3):
             jobs.put(mid + ''.join(map(str, job)))
 
-        print(mid, jobs.unfinished_tasks)
-
-    print(f'there are {jobs.unfinished_tasks} vessels awaiting to be stored in database')
-
-def get_shit_done():
-    for i in range(8):
+def start_threads():
+    for i in range(10):
         worker = StoppableThread(target=make_requests, args=(URL, jobs)) 
         worker.start()
-    for i in range(8):
+    for i in range(10):
         worker.join()
+
+def main():
+    create_jobs(panama_mids)
+    start = perf_counter()
+    try:
+        print('Starting')
+        start_threads()
+    except KeyboardInterrupt:
+        print("writing stuff")
+        with open(data_file_path, 'w') as out:
+            vessels_object = json.dumps(found_vessels, indent=4)
+            out.write(vessels_object)
+    end = perf_counter()
+    print(f'Today i wasted {end-start:.2f} seconds on MMSI {len(found_vessels)}')
+
 
 def read_json(vessel_file):
     with open(vessel_file, 'r') as data:
@@ -81,15 +88,4 @@ def write_json(vessel_data):
         outfile.write(vessels_object)
 
 if __name__ == "__main__":
-    create_jobs(panama_mids)
-    start = perf_counter()
-    try:
-        print('Starting')
-        get_shit_done()
-    except KeyboardInterrupt:
-        print("writing stuff")
-        with open(data_file_path, 'w') as out:
-            vessels_object = json.dumps(found_vessels, indent=4)
-            out.write(vessels_object)
-    end = perf_counter()
-    print(f'Today i wasted {end-start:.2f} seconds on MMSI {len(found_vessels)}')
+    main()

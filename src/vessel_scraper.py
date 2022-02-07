@@ -3,7 +3,7 @@
 import requests
 import aiohttp
 import asyncio
-from .create_mmsi import MMSI
+from .enum_mmsi import MMSI
 from time import perf_counter
 
 # add response json filter for unwanter vessel types
