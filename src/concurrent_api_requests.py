@@ -50,7 +50,7 @@ data_file_path= 'cli_test_2.json'
 
 vessel_types = []
 def make_requests(url, q):
-    with open(data_file_path, 'w') as outfile, open('common_vessel_types.txt', 'w') as textfile:
+    with open(data_file_path, 'w') as outfile: 
         while not q.empty() or len(found_vessels) != 12: 
              digits = q.get()
              response = requests.get(f'{URL}{digits}000', headers=HEADERS)
@@ -60,7 +60,6 @@ def make_requests(url, q):
                  if vessel['type'].lower() not in FILTER['types_restrict'] and vessel['imo'] !=0: 
                      # Adding mmsi to vessel info
                      vessel['mmsi'] = int(digits) 
-                     vessels_object = json.dumps(vessel)
                      found_vessels.append(vessel)
                      yield vessel
              else:
@@ -76,12 +75,14 @@ common_types = {
         }
 
 
-def printout():
+def vessel_type_counter():
+    # Curses(front-end comes later) module stuff goes here 
     for vessel in make_requests(URL, jobs):
         t = vessel['type'].lower()
         if t in common_types.keys():
             common_types[t] += 1
-        # Curses module stuff goes here 
+        else:
+            common_types[t] = 1
 
 
 
@@ -93,7 +94,7 @@ def create_jobs(mid_list, repeats=3):
 def start_threads():
     for i in range(10):
         # Setting daemon to true for prettyer output ^_^
-        worker = StoppableThread(target=printout, daemon=True) 
+        worker = StoppableThread(target=vessel_type_counter, daemon=True) 
         worker.start()
     for i in range(10):
         worker.join()
@@ -108,10 +109,13 @@ def get_vessel_data(country_ids, out_file, repeats=3):
     except KeyboardInterrupt:
         print("\nwriting stuff")
         vessels_object = json.dumps(found_vessels, indent=4)
+        common_types_object = json.dumps(common_types, indent=4)
         with open(out_file, 'w') as out:
             out.write(vessels_object)
-        with open('common_vessel_types.txt', 'w') as out:
-            out.writelines(vessel_types)
+            out.close()
+        with open('common_vessel_types.txt', 'w') as out_1:
+            out_1.write(common_types_object)
+            out_1.close()
     end = perf_counter()
     print(f' Found {len(found_vessels)} vessels in {end-start:.2f} seconds')
 
