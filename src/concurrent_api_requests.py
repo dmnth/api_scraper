@@ -46,26 +46,6 @@ data_file_path= 'cli_test_2.json'
 # that supports services B, C or M
 
 # Returns legit mmsi number as result
-
-
-vessel_types = []
-def make_requests(url, q):
-    with open(data_file_path, 'w') as outfile: 
-        while not q.empty() or len(found_vessels) != 12: 
-             digits = q.get()
-             response = requests.get(f'{URL}{digits}000', headers=HEADERS)
-             if response:
-                 vessel = response.json()
-                 # Right now dont add length/width sorting.
-                 if vessel['type'].lower() not in FILTER['types_restrict'] and vessel['imo'] !=0: 
-                     # Adding mmsi to vessel info
-                     vessel['mmsi'] = int(digits) 
-                     found_vessels.append(vessel)
-                     yield vessel
-             else:
-                print("bad request")
-                break
-
 common_types = {
         'crude oil tanker': 0,
         'bulk carrier': 0,
@@ -73,6 +53,25 @@ common_types = {
         'container ship': 0,
         'general cargo ship': 0,
         }
+
+
+vessel_types = []
+def make_requests(url, q):
+    while not q.empty() or len(found_vessels) != 12: 
+         digits = q.get()
+         response = requests.get(f'{URL}{digits}000', headers=HEADERS)
+         if response:
+             vessel = response.json()
+             # Right now dont add length/width sorting.
+             if vessel['type'].lower() not in FILTER['types_restrict'] and vessel['imo'] !=0: 
+                 # Adding mmsi to vessel info
+                 vessel['mmsi'] = int(digits) 
+                 found_vessels.append(vessel)
+                 yield vessel
+         else:
+            print("bad request")
+            break
+
 
 
 def vessel_type_counter():
@@ -83,6 +82,13 @@ def vessel_type_counter():
             common_types[t] += 1
         else:
             common_types[t] = 1
+        yield common_types
+
+def print_common_types():
+    for taip in vessel_type_counter():
+        sys.stdout.write(f"Tankers: {taip['crude oil tanker']}")
+        sys.stdout.flush()
+
 
 
 
@@ -103,9 +109,11 @@ def get_vessel_data(country_ids, out_file, repeats=3):
     create_jobs(country_ids, repeats)
     start = perf_counter()
     print(f'[+] Total possible inmarsat carriers: {jobs.unfinished_tasks}')
+    print(common_types)
     try:
         print('[+] Sending requests')
         start_threads()
+        print_common_types()
     except KeyboardInterrupt:
         print("\nwriting stuff")
         vessels_object = json.dumps(found_vessels, indent=4)
