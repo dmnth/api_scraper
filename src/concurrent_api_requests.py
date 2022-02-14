@@ -33,7 +33,7 @@ FILTER = {
 
 jobs = Queue()
 found_vessels = []
-data_file_path= 'cli_test_2.json'
+data_file_path= 'panama_vessels.json'
 
 # TODO: Find proper way to eaded script
 # Capture disconnect exception
@@ -57,8 +57,14 @@ common_types = {
 
 vessel_types = []
 def make_requests(url, q):
-    while not q.empty() or len(found_vessels) != 12: 
+    # sleep is here to prevent ConnectionResetError
+    # for server is sometimes not ready to respond
+    time.sleep(0.01)
+#    while not q.empty(): 
+    try:
          digits = q.get()
+         sys.stdout.write('\r\t{1}/{0}'.format(q.unfinished_tasks, q.unfinished_tasks-q.qsize()))
+         sys.stdout.flush()
          response = requests.get(f'{URL}{digits}000', headers=HEADERS)
          if response:
              vessel = response.json()
@@ -70,50 +76,50 @@ def make_requests(url, q):
                  yield vessel
          else:
             print("bad request")
-            break
+#            break
+    except ConnectionResetError as err:
+        print(f'well fuck, reset on {len(vessels)} vessel')
 
 
 
-def vessel_type_counter():
+def vessel_type_counter(queue):
     # Curses(front-end comes later) module stuff goes here 
-    for vessel in make_requests(URL, jobs):
+    for vessel in make_requests(URL, queue):
         t = vessel['type'].lower()
         if t in common_types.keys():
             common_types[t] += 1
         else:
             common_types[t] = 1
-        yield common_types
-
-def print_common_types():
-    for taip in vessel_type_counter():
-        sys.stdout.write(f"Tankers: {taip['crude oil tanker']}")
-        sys.stdout.flush()
 
 
-
-
-def create_jobs(mid_list, repeats=3):
+def create_jobs(queue, mid_list, repeats=3):
     for mid in mid_list:
         for job in itertools.product(range(0, 10), repeat=repeats):
-            jobs.put(mid + ''.join(map(str, job)))
+            queue.put(mid + ''.join(map(str, job)))
 
-def start_threads():
+def set_vessel_types():
+    with open('common_vessel_types.json', 'r') as smth:
+        data = smth.loads()
+
+
+def start_threads(queue):
     for i in range(10):
         # Setting daemon to true for prettyer output ^_^
-        worker = StoppableThread(target=vessel_type_counter, daemon=True) 
+        worker = StoppableThread(target=vessel_type_counter, args=(queue,), daemon=True) 
         worker.start()
     for i in range(10):
         worker.join()
 
 def get_vessel_data(country_ids, out_file, repeats=3):
-    create_jobs(country_ids, repeats)
+    jobs_q = Queue()
+    tasks = jobs_q.unfinished_tasks
+    create_jobs(jobs_q, country_ids, repeats)
     start = perf_counter()
-    print(f'[+] Total possible inmarsat carriers: {jobs.unfinished_tasks}')
-    print(common_types)
+    print(f'[+] Total possible inmarsat carriers: {jobs_q.unfinished_tasks}')
     try:
-        print('[+] Sending requests')
-        start_threads()
-        print_common_types()
+        print('[+] Sending requests:')
+        while not jobs_q.empty():
+            start_threads(jobs_q)
     except KeyboardInterrupt:
         print("\nwriting stuff")
         vessels_object = json.dumps(found_vessels, indent=4)
@@ -121,11 +127,11 @@ def get_vessel_data(country_ids, out_file, repeats=3):
         with open(out_file, 'w') as out:
             out.write(vessels_object)
             out.close()
-        with open('common_vessel_types.txt', 'w') as out_1:
+        with open('common_vessel_types.json', 'w') as out_1:
             out_1.write(common_types_object)
             out_1.close()
     end = perf_counter()
-    print(f' Found {len(found_vessels)} vessels in {end-start:.2f} seconds')
+    print(f'\n Found {len(found_vessels)} vessels in {end-start:.2f} seconds\n\n#############################################\n')
 
 
 def read_json(vessel_file):
