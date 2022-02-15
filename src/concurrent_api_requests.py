@@ -11,6 +11,9 @@ from queue import Queue
 from threads import StoppableThread
 from enum_mmsi import panama_mids
 
+# It is easyer to update small separate files 
+# than huge-ass dict-styled-json abomination mf
+
 URL = 'https://www.vesselfinder.com/api/pub/click/'
 HEADERS = {'User-Agent': "Mozilla/5.0"}
 FILTER = {
@@ -31,9 +34,28 @@ FILTER = {
             ],
         }
 
-jobs = Queue()
-found_vessels = []
 data_file_path= 'panama_vessels.json'
+vessels_by_country = {
+                        'country_nam':[
+                                        {
+                                        'imo': 234223,
+                                        'name': 'vesselname',
+                                        'year': 1993
+                                            },
+                                        {
+                                            'imo': 123121,
+                                            'name': 'namesone',
+                                            'year': 1923
+                                            }
+                                        ],
+                        'seconde country name': [
+                            {
+                                'imo': 324234223,
+                                'name': 'asdada'
+                                },
+                            ]
+                        }
+
 
 # TODO: Find proper way to eaded script
 # Capture disconnect exception
@@ -56,11 +78,12 @@ common_types = {
 
 
 vessel_types = []
+found_vessels = []
+
 def make_requests(url, q):
     # sleep is here to prevent ConnectionResetError
     # for server is sometimes not ready to respond
     time.sleep(0.01)
-#    while not q.empty(): 
     try:
          digits = q.get()
          sys.stdout.write('\r\t{1}/{0}'.format(q.unfinished_tasks, q.unfinished_tasks-q.qsize()))
@@ -75,8 +98,7 @@ def make_requests(url, q):
                  found_vessels.append(vessel)
                  yield vessel
          else:
-            print("bad request")
-#            break
+            print("\nBad request")
     except ConnectionResetError as err:
         print(f'well fuck, reset on {len(vessels)} vessel')
 
@@ -110,28 +132,51 @@ def start_threads(queue):
     for i in range(10):
         worker.join()
 
+def write_data(out_file, vessel_object):
+    with open(out_file, 'w') as out:
+        out.write(vessel_object)
+        out.close()
+
+def write_vessel_types(common_types_object):
+    with open('common_vessel_types.json', 'w') as out_1:
+        out_1.write(common_types_object)
+        out_1.close()
+
+
 def get_vessel_data(country_ids, out_file, repeats=3):
     jobs_q = Queue()
-    tasks = jobs_q.unfinished_tasks
     create_jobs(jobs_q, country_ids, repeats)
     start = perf_counter()
     print(f'[+] Total possible inmarsat carriers: {jobs_q.unfinished_tasks}')
+    common_types_object = json.dumps(common_types, indent=4)
+    # This is considered a bad practice
+    # Consider refactoring this mess to a separate class
+    # later. 
+    # Global variable is used to set list to empty
+    # after every iteration, so contents wont get written
+    # to json all at once every time.
+    global found_vessels
+
     try:
         print('[+] Sending requests:')
         while not jobs_q.empty():
             start_threads(jobs_q)
+        if found_vessels:
+            vessels_object = json.dumps(found_vessels, indent=4)
+            write_data(out_file, vessels_object)
+            found_vessels = []
+            return
+        write_vessel_types(common_types_object)
+
     except KeyboardInterrupt:
-        print("\nwriting stuff")
-        vessels_object = json.dumps(found_vessels, indent=4)
-        common_types_object = json.dumps(common_types, indent=4)
-        with open(out_file, 'w') as out:
-            out.write(vessels_object)
-            out.close()
-        with open('common_vessel_types.json', 'w') as out_1:
-            out_1.write(common_types_object)
-            out_1.close()
+        write_vessel_types(common_types_object)
+        if found_vessels:
+            vessels_object = json.dumps(found_vessels, indent=4)
+            write_data(out_file, vessels_object)
+            found_vessels = []
+
     end = perf_counter()
-    print(f'\n Found {len(found_vessels)} vessels in {end-start:.2f} seconds\n\n#############################################\n')
+    print(f'\n\n Found {len(found_vessels)} vessels in {end-start:.2f} seconds\n\n#############################################\n')
 
 
 def read_json(vessel_file):
