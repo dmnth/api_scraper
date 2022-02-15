@@ -13,6 +13,8 @@ from enum_mmsi import panama_mids
 
 # It is easyer to update small separate files 
 # than huge-ass dict-styled-json abomination mf
+# Countries with small or non-commercial fleet 
+# will be filtered out.
 
 URL = 'https://www.vesselfinder.com/api/pub/click/'
 HEADERS = {'User-Agent': "Mozilla/5.0"}
@@ -156,7 +158,8 @@ def get_vessel_data(country_ids, out_file, repeats=3):
     # after every iteration, so contents wont get written
     # to json all at once every time.
     global found_vessels
-
+    vessels_found = len(found_vessels) 
+    
     try:
         print('[+] Sending requests:')
         while not jobs_q.empty():
@@ -164,8 +167,8 @@ def get_vessel_data(country_ids, out_file, repeats=3):
         if found_vessels:
             vessels_object = json.dumps(found_vessels, indent=4)
             write_data(out_file, vessels_object)
+            vessels_found = len(found_vessels)
             found_vessels = []
-            return
         write_vessel_types(common_types_object)
 
     except KeyboardInterrupt:
@@ -173,10 +176,9 @@ def get_vessel_data(country_ids, out_file, repeats=3):
         if found_vessels:
             vessels_object = json.dumps(found_vessels, indent=4)
             write_data(out_file, vessels_object)
-            found_vessels = []
 
     end = perf_counter()
-    print(f'\n\n Found {len(found_vessels)} vessels in {end-start:.2f} seconds\n\n#############################################\n')
+    print(f'\n\n Found {vessels_found} vessels in {end-start:.2f} seconds\n\n#############################################\n')
 
 
 def read_json(vessel_file):

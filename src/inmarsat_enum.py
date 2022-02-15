@@ -4,6 +4,7 @@ from enum_mmsi import MID
 from concurrent_api_requests import get_vessel_data, write_json
 import json
 import sys
+import os
 
 # This scripts gathers data of all
 # that have or will install in nearest
@@ -43,7 +44,14 @@ class InmarsatEnum:
         get_vessel_data(self._country_id_list, self._out_file, number_of_repeats)
     
     def get_all_tha_vessels(self):
-        for country in self._data.keys():
+        country_list = [el for el in self._data.keys()]
+        if len(os.listdir('vessels_by_country')) > 0:
+            # Write last country name to file, save progress
+            # if crashes
+            last_country = os.listdir('vessels_by_country')[-1].split('.')[0].title()
+            idx = country_list.index(last_country)
+            country_list = country_list[idx:]
+        for country in country_list:
             try:
                 sys.stdout.write('\r Current country: {0}\n'.format(country))
                 sys.stdout.flush()

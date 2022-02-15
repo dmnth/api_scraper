@@ -38,9 +38,14 @@ class MID:
     #Threw a hash map at it 
     @classmethod
     def get_mid_by_country_name(self, country_name):
-        name = country_name.title()
+        # Check is useful for user-input
+        '''
+        if country_name != 'Antigua and Barbuda':
+            name = country_name.title()
+        '''
+        name = country_name
         if name not in MID.mids_db.keys() :
-            raise KeyError('Country not on list or doesnt exist')
+            raise KeyError(f'Country {name} not on list or doesnt exist')
         return MID.mids_db[name]
     
     @classmethod
