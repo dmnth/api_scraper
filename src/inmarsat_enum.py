@@ -37,6 +37,7 @@ class InmarsatEnum:
     # just 'C' - 5
     # "A" like any other - 6
     # Should be a seprate option for (A), (C), [B, C, M]
+    # Checks for existence of every .json should be made
     def generate_output(self, number_of_repeats):
         self._out_file = 'vessels_by_country/' + f'{self.country.lower()}.json'
         if not hasattr(self, '_country_id_list'):
