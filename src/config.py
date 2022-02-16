@@ -22,6 +22,8 @@ class Config(object):
             }
     COMMON_TYPES = {}
     STORAGE_PATH = basedir + '/data'
+    WORDLISTS_COUNTRY = basedir + 'mmsi_lists/by_country/'
+    WORDLISTS_MASTER = basedir + 'mmsi_lists/master_list/'
 
 config = {'default': Config}
 
