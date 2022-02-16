@@ -7,17 +7,38 @@ from config import config
 
 basedir = os.path.abspath(os.path.dirname(__file__))
 
-countries = json.load(open('MIDs/n_mids.json', 'r'))
 
-def generate_mmsi(mid_list, repeats, n):
-    mid_counter = 0
-    for mid in mid_list:
-        for mmsi in itertools.product(range(0,10), repeat=repeats):
-            yield mid + ''.join(map(str,mmsi))+ '0' * n
+class MMSIgen:
 
-for key,value in countries.items():
-    with open(f'mmsi_lists/{key}_3_000.txt', 'w') as mmsi:
-        lines = generate_mmsi(value, 3, 3)
-        for line in lines:
-            mmsi.write(line+'\n')
+    def generate_mmsi(mid_list, repeats, n):
+        for mid in mid_list:
+            for mmsi in itertools.product(range(0,10), repeat=repeats):
+                yield mid + ''.join(map(str,mmsi))+ '0' * n
+    
+    def write_separate_files(self, repeats, n):
+        if os.path.exists():
+            return
+        for key,value in countries.items():
+            with open(f'mmsi_lists/by_country/{key}_{repeats}_{"0" * n}.txt', 'w') as m:
+                for mid in value:
+                    for mmsi in itertools.product(range(0,10), repeat=repeats):
+                        line = mid + ''.join(map(str,mmsi))+ '0' * n
+                        m.write(line+'\n')
+            m.close()
+
+    def write_master_file(self, repeats, n):
+        if os.path.exists():
+            return
+        with open(f'mmsi_lists/by_country/{key}_{repeats}_{"0" * n}.txt', 'w') as m:
+            for key,value in countries.items():
+                for mid in value:
+                    for mmsi in itertools.product(range(0,10), repeat=repeats):
+                        line = mid + ''.join(map(str,mmsi))+ '0' * n
+                        m.write(line+'\n')
+        m.close()
+
+if __name__ == "__main__":
+    countries = json.load(open('MIDs/n_mids.json', 'r'))
+    gen = MMSIgen()
+    gen.write_separate_files(5, 1)
 
