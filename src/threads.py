@@ -1,21 +1,87 @@
 #! /usr/bin/env python3
 
-import threading
+from threading import Thread
+from queue import Queue
+import time
+import sys
+import requests
+from config import config
 
-class StoppableThread(threading.Thread):
-    # Thread class with stop method,
-    # Checks regularly for stopped condition
+config = config['default']
 
-    def __init__(self, *args, **kwargs):
-        super(StoppableThread, self).__init__(*args, **kwargs)
-        self._stop_event = threading.Event()
+class SimpleThread(Thread):
 
-    def stop(self):
-        self._stop_event.set()
+    def __init__(self, queue):
+        super().__init__()
+        self.queue = queue
+        self.response = None 
 
-    def stopped(self):
-        return self._stop_event.is_set()
+    def run(self):
+        # Prevent connection reset by peer
+        time.sleep(0.01)
+        try:
+            url = self.queue.get()
+            sys.stdout.write('\r\t{0}/{1}'.format(self.queue.unfinished_tasks, \
+                    self.queue.unfinished_tasks-self.queue.qsize()))
+            sys.stdout.flush()
+            response = requests.get(url, headers=config.HEADERS)
+            if response.status_code == 200:
+                self.response = response
+            else:
+                msg = f'{response.status_code} occured for {url}'
+                print(msg)
+        except Exception as err:
+            print(err.args)
 
+class ResponseGenerator(object):
+
+    def __init__(self, num_threads, queue): 
+        self.num_threads = num_threads
+        self.threads = []
+        self.position = 0
+
+        # Create some threads
+        for i in range(num_threads):
+            t = SimpleThread(queue) 
+            t.start()
+            self.threads.append(t)
+
+    def __iter__(self):
+        return self
+
+    def __next__(self):
+        if self.position >= self.num_threads:
+            raise StopIteration
+
+        t = self.threads[self.position]
+        self.position += 1
+
+        t.join()
+        return t.result
 
 if __name__ == "__main__":
-    stoppie = StoppableThread()
+    print(config.HEADERS)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

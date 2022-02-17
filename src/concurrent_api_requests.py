@@ -8,8 +8,8 @@ import curses
 from time import perf_counter
 #from gen_mmsi import panama_mids
 from queue import Queue 
-from threads import StoppableThread
 from enum_mmsi import panama_mids
+from threading import Thread
 
 # It is easyer to update small separate files 
 # than huge-ass dict-styled-json abomination mf
@@ -129,7 +129,7 @@ def set_vessel_types():
 def start_threads(queue):
     for i in range(10):
         # Setting daemon to true for prettyer output ^_^
-        worker = StoppableThread(target=vessel_type_counter, args=(queue,), daemon=True) 
+        worker = Thread(target=vessel_type_counter, args=(queue,), daemon=True) 
         worker.start()
     for i in range(10):
         worker.join()
