@@ -39,10 +39,11 @@ class ResponseGenerator(object):
         self.num_threads = num_threads
         self.threads = []
         self.position = 0
+        self.custom_thread = custom_thread
 
         # Create some threads
         for i in range(num_threads):
-            t = custom_thread(queue) 
+            t = self.custom_thread(queue) 
             t.start()
             self.threads.append(t)
 

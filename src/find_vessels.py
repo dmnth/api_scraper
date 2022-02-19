@@ -16,18 +16,24 @@ from threads import ResponseGenerator, RequestsThread
 
 class ApiRequests:
 
-    def __init__(self, base_url, wordlist):
+    def __init__(self, base_url, *args):
         super().__init__()
         self.base_url = base_url
-        self.wordlist = wordlist 
-        # itertools chain multiple wordlists together
+        self.wordlists = args 
         self.jobs = Queue()
 
     def create_jobs(self):
-        with open(self.wordlist, 'r') as wl:
-            for word in wl:
-                job = self.base_url + word.rstrip()
-                self.jobs.put(job)
+        for wl in self.wordlists:
+            with open(wl, 'r') as wordlist:
+                for word in wordlist:
+                    job = self.base_url + word.rstrip()
+                    self.jobs.put(job)
+    
+    def parse_args(self):
+        if len(self.wordlists) > 1:
+            print('MULTILIST')
+        else:
+            print('SINGLE FILE')
 
     def gather_results(self):
         results = []
@@ -36,30 +42,29 @@ class ApiRequests:
         start = perf_counter()
         while not self.jobs.empty():
             try:
-                responses1 = ResponseGenerator(10, RequestsThread, self.jobs)
-                responses2 = ResponseGenerator(10, RequestsThread, self.jobs)
-                responses3 = ResponseGenerator(10, RequestsThread, self.jobs)
-                responses4 = ResponseGenerator(10, RequestsThread, self.jobs)
-                responses5 = ResponseGenerator(10, RequestsThread, self.jobs)
-                results.extend(list(itertools.chain(responses1, responses2, responses3, responses4, responses5)))
+                response = ResponseGenerator(50, RequestsThread, self.jobs)
+                results.extend(list(response))
             except Exception as err:
                 print(err, err.args)
-            except KeyboardInterrupt as en:
-                print('\n (-_-) TODO: Spawn OKAYEST amount of processes, prevent data loss')
         
         end = perf_counter()
         print(f'ehrmarhge garhered {len(results)} data in {end-start:.2f} seconds\n\n################')
 
         print(len(results) == 2000)
         print(results[-1])
+        return results
 
 
 if __name__ == "__main__":
     country = 'Tuvalu'
+    country_2 = 'Spain'
     config = config['default']
     url = config.URL
     print(url)
     tuvalu_mmsi_list = config.WORDLISTS_COUNTRY + country + '_3_000.txt'
-    miner = ApiRequests(url, tuvalu_mmsi_list)
+    spain_mmsi_list = config.WORDLISTS_COUNTRY + country_2 + '_3_000.txt'
+
+    miner = ApiRequests(url, tuvalu_mmsi_list, spain_mmsi_list)
+    miner.parse_args()
     miner.create_jobs()
     miner.gather_results()
