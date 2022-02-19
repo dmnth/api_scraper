@@ -9,7 +9,7 @@ from config import config
 
 config = config['default']
 
-class SimpleThread(Thread):
+class RequestsThread(Thread):
 
     def __init__(self, queue):
         super().__init__()
@@ -35,14 +35,14 @@ class SimpleThread(Thread):
 
 class ResponseGenerator(object):
 
-    def __init__(self, num_threads, queue): 
+    def __init__(self, num_threads, custom_thread, queue): 
         self.num_threads = num_threads
         self.threads = []
         self.position = 0
 
         # Create some threads
         for i in range(num_threads):
-            t = SimpleThread(queue) 
+            t = custom_thread(queue) 
             t.start()
             self.threads.append(t)
 
@@ -57,7 +57,7 @@ class ResponseGenerator(object):
         self.position += 1
 
         t.join()
-        return t.result
+        return t.response
 
 if __name__ == "__main__":
     print(config.HEADERS)
