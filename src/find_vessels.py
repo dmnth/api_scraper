@@ -3,7 +3,6 @@
 import os
 import sys
 import time
-import requests
 from queue import Queue
 from config import config
 from time import perf_counter
@@ -21,7 +20,6 @@ class ApiRequests:
         self.base_url = base_url
         self.wordlists = args 
         self.jobs = Queue()
-        self.jobs_list = []
 
     def create_jobs(self):
 
@@ -37,8 +35,7 @@ class ApiRequests:
                     new_q = Queue()
                     for word in wordlist:
                         job = self.base_url + word.rstrip()
-                        new_q.put(job)
-                    self.jobs_list.append(new_q)
+                        self.jobs.put(job)
 
         else: 
             print('No wordlists provided')
@@ -56,9 +53,11 @@ class ApiRequests:
         results = []
         print('##########################################')
         print('Gatherting data: ')
+        jobs_done = 0
         start = perf_counter()
         while not self.jobs.empty():
             try:
+                jobs_done += 50
                 response = ResponseGenerator(50, RequestsThread, self.jobs)
                 results.extend(list(response))
             except Exception as err:
@@ -66,7 +65,7 @@ class ApiRequests:
         
         end = perf_counter()
         print(f'ehrmarhge garhered {len(results)} objects in {end-start:.2f} seconds\n\n################')
-
+        print(f'Jobs done: {jobs_done}')
         print(len(results) == 2000)
         print(results[-1])
         return results
@@ -81,7 +80,7 @@ if __name__ == "__main__":
     tuvalu_mmsi_list = config.WORDLISTS_COUNTRY + country + '_3_000.txt'
     spain_mmsi_list = config.WORDLISTS_COUNTRY + country_2 + '_3_000.txt'
 
-    miner = ApiRequests(url, tuvalu_mmsi_list)
+    miner = ApiRequests(url, tuvalu_mmsi_list, spain_mmsi_list)
     miner.parse_args()
     miner.create_jobs()
     miner.gather_results()
