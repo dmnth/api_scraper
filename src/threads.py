@@ -13,25 +13,25 @@ class RequestsThread(Thread):
 
     def __init__(self, queue):
         super().__init__()
-        self.queue = queue
+        self.q = queue
         self.response = None 
 
     def run(self):
         # Prevent connection reset by peer
         time.sleep(0.01)
         try:
-            url = self.queue.get()
-            sys.stdout.write('\r\t{0}/{1}'.format(self.queue.unfinished_tasks, \
-                    self.queue.unfinished_tasks-self.queue.qsize()))
-            sys.stdout.flush()
+            url = self.q.get()
             response = requests.get(url, headers=config.HEADERS)
+            sys.stdout.write('\r\t{0}'.format(self.q.unfinished_tasks))
+            sys.stdout.flush()
+            self.q.task_done()
             if response.status_code == 200:
                 self.response = response
             else:
                 msg = f'{response.status_code} occured for {url}'
                 print(msg)
         except Exception as err:
-            print(err.args)
+            print('Here', err.args)
 
 class ResponseGenerator(object):
 
@@ -62,27 +62,3 @@ class ResponseGenerator(object):
 
 if __name__ == "__main__":
     print(config.HEADERS)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
