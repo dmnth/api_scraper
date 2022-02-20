@@ -26,12 +26,20 @@ class RequestsThread(Thread):
             sys.stdout.flush()
             self.q.task_done()
             if response.status_code == 200:
-                self.response = response
+                self.response = response.json()
             else:
                 msg = f'{response.status_code} occured for {url}'
                 print(msg)
+        except ConnectionResetError as err:
+            print('Connection error: ', err.args)
         except Exception as err:
-            print('Here', err.args)
+            print('Wild exceptio: ', err.args)
+
+class JobsThread(Thread):
+    # TODO : 
+    # Make popping items from queue possible while i
+    # still is getting created
+    return
 
 class ResponseGenerator(object):
 

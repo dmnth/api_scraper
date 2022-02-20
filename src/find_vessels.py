@@ -3,6 +3,7 @@
 import os
 import sys
 import time
+import json
 from queue import Queue
 from config import config
 from time import perf_counter
@@ -20,6 +21,7 @@ class ApiRequests:
         self.base_url = base_url
         self.wordlists = args 
         self.jobs = Queue()
+        self.jobs_q = []
 
     def create_jobs(self):
 
@@ -31,11 +33,12 @@ class ApiRequests:
 
         elif len(self.wordlists) > 1:
             for wl in self.wordlists:
+                new_q = Queue()
                 with open(wl, 'r') as wordlist:
-                    new_q = Queue()
                     for word in wordlist:
                         job = self.base_url + word.rstrip()
-                        self.jobs.put(job)
+                        new_q.put(job)
+                    self.jobs_q.append(new_q)
 
         else: 
             print('No wordlists provided')
@@ -53,22 +56,31 @@ class ApiRequests:
         results = []
         print('##########################################')
         print('Gatherting data: ')
-        jobs_done = 0
         start = perf_counter()
         while not self.jobs.empty():
             try:
-                jobs_done += 50
                 response = ResponseGenerator(50, RequestsThread, self.jobs)
                 results.extend(list(response))
             except Exception as err:
                 print(err, err.args)
+                sys.exit()
         
         end = perf_counter()
-        print(f'ehrmarhge garhered {len(results)} objects in {end-start:.2f} seconds\n\n################')
-        print(f'Jobs done: {jobs_done}')
-        print(len(results) == 2000)
+        print(f'\nEehrmarhge garhered {len(results)} objects in {end-start:.2f} seconds\n\n################')
         print(results[-1])
-        return results
+        yield results
+
+    def do_stuff_with_results(self):
+        # For every country in input write separate file
+        for result in self.gather_results():
+            print(result[-1])
+
+    def write_json(self, results, filepath):
+        vessels = json.dumps(results, indent=4)
+        with open(filepath, 'w') as out:
+            out.write(vessels)
+            out.close()
+
 
 
 if __name__ == "__main__":
@@ -83,4 +95,4 @@ if __name__ == "__main__":
     miner = ApiRequests(url, tuvalu_mmsi_list, spain_mmsi_list)
     miner.parse_args()
     miner.create_jobs()
-    miner.gather_results()
+    miner.do_stuff_with_results()
