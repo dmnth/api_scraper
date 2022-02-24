@@ -24,18 +24,14 @@ class ApiRequests:
 
     def create_jobs(self):
 
-        if len(self.wordlists) == 1:
-            with open(self.wordlists[0], 'r') as wordlist:
-                for word in wordlist:
-                    job = self.base_url + word.rstrip()
-                    self.jobs.put(job)
-
-        elif len(self.wordlists) > 1:
+        if len(self.wordlists) >= 1:
             for wl in self.wordlists:
                 with open(wl, 'r') as wordlist:
                     for word in wordlist:
                         job = self.base_url + word.rstrip()
                         self.jobs.put(job)
+                        if self.jobs.unfinished_tasks == 20:
+                            self.write('test.txt')
 
         else: 
             print('No wordlists provided')
@@ -53,7 +49,7 @@ class ApiRequests:
         start = perf_counter()
         while not self.jobs.empty():
             try:
-                response = ResponseGenerator(50, RequestsThread, self.jobs)
+                response = ResponseGenerator(20, RequestsThread, self.jobs)
                 yield list(response)
             except Exception as err:
                 print(err, err.args)
@@ -65,7 +61,7 @@ class ApiRequests:
     def write(self, filepath):
         for result in self.gather_results():
             vessels = json.dumps(result, indent=4)
-            with open(filepath, 'w') as out:
+            with open(filepath, 'a') as out:
                 out.write(vessels)
                 out.close()
 
@@ -85,5 +81,8 @@ if __name__ == "__main__":
 
     miner = ApiRequests(url, huge_list)
     miner.parse_args()
-    miner.create_jobs()
-    miner.write(write_file)
+    while True:
+        try:
+            miner.create_jobs()
+        except Exception as e:
+            print(e, e.args)
