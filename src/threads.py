@@ -35,12 +35,6 @@ class RequestsThread(Thread):
         except Exception as err:
             print('Wild exceptio: ', err.args)
 
-class JobsThread(Thread):
-    # TODO : 
-    # Make popping items from queue possible while i
-    # still is getting created
-    return
-
 class ResponseGenerator(object):
 
     def __init__(self, num_threads, custom_thread, queue): 

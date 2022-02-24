@@ -10,7 +10,7 @@ from time import perf_counter
 from threads import ResponseGenerator, RequestsThread 
 
 
-# Class for requests, pops url from queue, generates resoponse
+# Class for requests, pops url from queue, generates response
 # Create function inside vf class that captures generator object,
 # set it as target for threaded req ??? profit (DOCUMENTATION)
 
@@ -19,9 +19,8 @@ class ApiRequests:
     def __init__(self, base_url, *args):
         super().__init__()
         self.base_url = base_url
-        self.wordlists = args 
+        self.wordlists = list(args) 
         self.jobs = Queue()
-        self.jobs_q = []
 
     def create_jobs(self):
 
@@ -33,17 +32,15 @@ class ApiRequests:
 
         elif len(self.wordlists) > 1:
             for wl in self.wordlists:
-                new_q = Queue()
                 with open(wl, 'r') as wordlist:
                     for word in wordlist:
                         job = self.base_url + word.rstrip()
-                        new_q.put(job)
-                    self.jobs_q.append(new_q)
+                        self.jobs.put(job)
 
         else: 
             print('No wordlists provided')
             sys.exit()
-    
+
     def parse_args(self):
         if len(self.wordlists) > 1:
             print('MULTILIST')
@@ -53,33 +50,25 @@ class ApiRequests:
             print('NO FILE')
 
     def gather_results(self):
-        results = []
-        print('##########################################')
-        print('Gatherting data: ')
         start = perf_counter()
         while not self.jobs.empty():
             try:
                 response = ResponseGenerator(50, RequestsThread, self.jobs)
-                results.extend(list(response))
+                yield list(response)
             except Exception as err:
                 print(err, err.args)
                 sys.exit()
         
         end = perf_counter()
-        print(f'\nEehrmarhge garhered {len(results)} objects in {end-start:.2f} seconds\n\n################')
-        print(results[-1])
-        yield results
+        print(f'\nEehrmarhge in {end-start:.2f} seconds\n\n################')
 
-    def do_stuff_with_results(self):
-        # For every country in input write separate file
+    def write(self, filepath):
         for result in self.gather_results():
-            print(result[-1])
+            vessels = json.dumps(result, indent=4)
+            with open(filepath, 'w') as out:
+                out.write(vessels)
+                out.close()
 
-    def write_json(self, results, filepath):
-        vessels = json.dumps(results, indent=4)
-        with open(filepath, 'w') as out:
-            out.write(vessels)
-            out.close()
 
 
 
@@ -91,8 +80,10 @@ if __name__ == "__main__":
     print(url)
     tuvalu_mmsi_list = config.WORDLISTS_COUNTRY + country + '_3_000.txt'
     spain_mmsi_list = config.WORDLISTS_COUNTRY + country_2 + '_3_000.txt'
+    huge_list = config.WORDLISTS_MASTER + 'longlist_3_000.txt'
+    write_file = 'test.json'
 
-    miner = ApiRequests(url, tuvalu_mmsi_list, spain_mmsi_list)
+    miner = ApiRequests(url, huge_list)
     miner.parse_args()
     miner.create_jobs()
-    miner.do_stuff_with_results()
+    miner.write(write_file)
