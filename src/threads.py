@@ -60,7 +60,9 @@ class ResponseGenerator(object):
         self.position += 1
 
         t.join()
-        return t.response
+        # To not raise TypeError with NoneType slipping in
+        if t.response is not None:
+            return t.response
 
 if __name__ == "__main__":
     print(config.HEADERS)

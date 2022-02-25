@@ -18,11 +18,21 @@ class Config(object):
                 'sailing vessel',
                 'military ops',
                 'tug',
+                'yacht',
+                'buoy/lighthouse vessel',
+                'crew boat',
+                'landing craft',
+                'motor hopper',
+                'anchor hoy',
+                'standby safety vessel',
+                'fishing support vessel',
+                'pontoon',
                 ],
             }
     COMMON_TYPES = {}
     STORAGE_PATH = basedir + '/data'
     WORDLISTS_COUNTRY = basedir + '/mmsi_lists/by_country/'
     WORDLISTS_MASTER = basedir + '/mmsi_lists/master_list/'
+    DATA_DIR = basedir + 'data/'
 
 config = {'default': Config}

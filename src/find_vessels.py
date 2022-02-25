@@ -21,8 +21,9 @@ class ApiRequests:
         self.base_url = base_url
         self.wordlists = list(args) 
         self.jobs = Queue()
+        self.vessels_found = 0
 
-    def create_jobs(self):
+    def get_jobs_done(self):
 
         if len(self.wordlists) >= 1:
             for wl in self.wordlists:
@@ -31,7 +32,7 @@ class ApiRequests:
                         job = self.base_url + word.rstrip()
                         self.jobs.put(job)
                         if self.jobs.unfinished_tasks == 20:
-                            self.write('test.txt')
+                            self.save_results_json('test.json')
 
         else: 
             print('No wordlists provided')
@@ -46,7 +47,6 @@ class ApiRequests:
             print('NO FILE')
 
     def gather_results(self):
-        start = perf_counter()
         while not self.jobs.empty():
             try:
                 response = ResponseGenerator(20, RequestsThread, self.jobs)
@@ -54,16 +54,35 @@ class ApiRequests:
             except Exception as err:
                 print(err, err.args)
                 sys.exit()
-        
-        end = perf_counter()
-        print(f'\nEehrmarhge in {end-start:.2f} seconds\n\n################')
 
-    def write(self, filepath):
+    def sanitize_results(self):
+        filtered_result = []
         for result in self.gather_results():
-            vessels = json.dumps(result, indent=4)
-            with open(filepath, 'a') as out:
+            for element in result:
+                try:
+                    if element['type'].lower() not in config.FILTER['blacklist'] \
+                            and element['imo'] != 0 and element != None:
+                                filtered_result.append(element)
+                except TypeError as err:
+                    print('Because of connection reset/(502 error) NoneType got into list')
+        if len(filtered_result) != 0:
+            self.vessels_found += len(result)
+            print(f'Vessels found: {self.vessels_found}')
+            yield filtered_result
+                            
+
+    def save_results_json(self, filepath):
+        with open(filepath, 'a') as out:
+            for result in self.sanitize_results():
+                vessels = json.dumps(result, indent=4)
                 out.write(vessels)
-                out.close()
+        out.close()
+    
+    def save_results_txt(self, path):
+        pass
+
+    def save_results_csv(self, path):
+        pass
 
 
 
@@ -82,7 +101,4 @@ if __name__ == "__main__":
     miner = ApiRequests(url, huge_list)
     miner.parse_args()
     while True:
-        try:
-            miner.create_jobs()
-        except Exception as e:
-            print(e, e.args)
+        miner.get_jobs_done()
