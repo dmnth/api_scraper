@@ -1,6 +1,8 @@
 #! /usr/bin/env python3
 
 import requests
+from scraper import parse_equasis
+from requests_html import HTMLSession
 
 # will need a pool of identifiers
 
@@ -13,7 +15,7 @@ updated_headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
         } 
 
-landing_page = base_url + \
+auth_page = base_url + \
 'EquasisWeb/public/HomePage?fs=HomePage&P_ACTION=NEW_CONNECTION'
 login_page = base_url + 'EquasisWeb/authen/HomePage?fs=HomePage'
 login_data = {'j_email': 'kborodin1@gmail.com',
@@ -35,25 +37,21 @@ detailed_search_page = base_url + \
 detailed_search_data = {'P_IMO': None }
 
 def make_request(imo):
-    with requests.Session() as session:
+    with HTMLSession() as session:
         session.headers.update(updated_headers)
-        test_response = session.get(landing_page)
+        test_response = session.get(auth_page)
         session_cookie = test_response.headers.get('Set-Cookie')
         session_id = session_cookie.split(';')[0].split('=')[1]
         login_data.update({'JSESSIONID': session_id})
         test_login = session.post(login_page, data=login_data) 
-        search_data['P_ENTREE_HOME'] = imo
-        search_data['P_ENTREE_HOME_HIDDEN'] = imo
         test_search = session.post(search_page, data=search_data)
         detailed_search_data['P_IMO'] = imo
         detailed_search = session.post(detailed_search_page, data=detailed_search_data)
-        result = detailed_search.content.decode()
-        return result
+        results = parse_equasis(detailed_search)
+        return results 
 
 
 
 if __name__ == "__main__":
     wall_of_text = make_request('9850874')
-    with open('wall_of_html', 'w') as out:
-        out.write(wall_of_text)
-    print('Registered owner' in wall_of_text)
+    print(wall_of_text)

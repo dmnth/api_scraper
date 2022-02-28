@@ -16,13 +16,16 @@ from requests_html import HTMLSession
 
 __PATH__ = os.path.abspath(os.path.dirname(__file__))
 
+'''
+session = HTMLSession()
+response = session.get('http://localhost:3000')
+'''
+
+
 def parse_equasis(url):
     
     data = {}
     
-    session = HTMLSession()
-    response = session.get('http://localhost:3000')
-
     #######Regex#########################o
 
     # (?<=Registered owner)\n[A-Z]+\s[A-Z]+
@@ -36,14 +39,10 @@ def parse_equasis(url):
 
     #####################################
 
-    management_details_string = response.html.find('#collapse3', first=True)
-    classification_info = response.html.find('#collapse4', first=True)
-    print(classification_society.findall(classification_info.text))
-    print(last_renewal.search(classification_info.text))
-    print(next_renewal.search(classification_info.text))
+    management_details_string = url.html.find('#collapse3', first=True)
+    classification_info = url.html.find('#collapse4', first=True)
     
     imo = imo_number.search(management_details_string.text)
-    print(imo)
 
     data['owner'] = owner_re.search(management_details_string.text).group()
     data['ism_manager'] = ism_manager_re.search(management_details_string.text).group()
@@ -52,12 +51,6 @@ def parse_equasis(url):
     data['next_renewal'] = next_renewal.search(classification_info.text).group()
     # Needs to be checked for multiple results, since could be changed by owner
     data['class_soc'] = classification_society.search(classification_info.text).group()
-    '''
-    data['cl_society'] =
-    '''
-    print(classification_info.text)
-    # Todo: parse values with regex
-    # Create a legit vessel class 
 
     return data 
 
