@@ -3,55 +3,50 @@
 import requests
 from scraper import parse_equasis
 from requests_html import HTMLSession
+from config import config
 
-# will need a pool of identifiers
+config = config['equasis']
 
-base_url = 'https://www.equasis.org/'
-updated_headers = {
-        'Sec-Fetch-Site': 'none',
-        'Sec-Fetch-Mode': 'navigate',
-        'Sec-Fetch-User': '?1',
-        'Sec-Fetch-Dest': 'document',
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)',
-        } 
+headers = config.updated_headers
+base_url = config.base_url
+login_data = config.login_data
+login_page = config.login_page
+auth_page = config.auth_page
+email = login_data['j_email']
+password = login_data['j_password']
+imo_data = config.imo
+imo_search_page = config.imo_search_url
 
-auth_page = base_url + \
-'EquasisWeb/public/HomePage?fs=HomePage&P_ACTION=NEW_CONNECTION'
-login_page = base_url + 'EquasisWeb/authen/HomePage?fs=HomePage'
-login_data = {'j_email': 'kborodin1@gmail.com',
-        'j_password': 'S00p@d00p@p00p@'}
+def get_session_id(url, session):
+    test_response = session.get(url, headers=headers)
+    if test_response.status_code == 200:
+        session_cookie = test_response.headers.get('Set-Cookie')
+        session_id = session_cookie.split(';')[0].split('=')[1]
+        print(session_id)
+        return session_id
+    else:
+        print('Returned: ', test_response.status_code)
 
-search_page = base_url + 'EquasisWeb/restricted/Search?fs=HomePage'
-search_data = {
-        'P_PAGE': '1', 
-        'P_PAGE_COMP': '1', 
-        'P_PAGE_SHIP': '1',
-        'P_ENTREE_HOME': None,
-        'P_ENTREE_HOME_HIDDEN': None,
-        'checkbox-shop': 'Ship',
-        'AdvancedSearch': '',
-        'fs': 'HomePage',
-        }
-detailed_search_page = base_url + \
-'EquasisWeb/restricted/ShipInfo?fs=Search'
-detailed_search_data = {'P_IMO': None }
+def login(email, password, sid, session):
+    login_data.update({'JSESSIONID': sid})
+    test_login = session.post(login_page, data=login_data) 
+    if test_login.status_code == 200:
+        print('sucess/not really')
+
+def search_by_imo(imo, session):
+    imo_data.update({'P_IMO': imo})
+    result = session.post(imo_search_page, data=imo_data)
+    return result
 
 def make_request(imo):
     with HTMLSession() as session:
-        session.headers.update(updated_headers)
-        test_response = session.get(auth_page)
-        session_cookie = test_response.headers.get('Set-Cookie')
-        session_id = session_cookie.split(';')[0].split('=')[1]
-        login_data.update({'JSESSIONID': session_id})
-        test_login = session.post(login_page, data=login_data) 
-        test_search = session.post(search_page, data=search_data)
-        detailed_search_data['P_IMO'] = imo
-        detailed_search = session.post(detailed_search_page, data=detailed_search_data)
-        results = parse_equasis(detailed_search)
-        return results 
-
+        session.headers.update(headers)
+        sid = get_session_id(auth_page, session)
+        login(email, password, sid, session)
+        result = search_by_imo(imo, session)
+        r = parse_equasis(result)
+        return r
 
 
 if __name__ == "__main__":
-    wall_of_text = make_request('9850874')
-    print(wall_of_text)
+    print(make_request(9473834))
