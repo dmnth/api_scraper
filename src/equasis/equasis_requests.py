@@ -17,6 +17,8 @@ password = login_data['j_password']
 imo_data = config.imo
 imo_search_page = config.imo_search_url
 
+# TODO: Handle exceptions
+
 def get_session_id(url, session):
     test_response = session.get(url, headers=headers)
     if test_response.status_code == 200:

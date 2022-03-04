@@ -2,12 +2,14 @@
 
 # So this script should parse the
 # content of response we got back from
-# equasis. Should return all possible data.
+# equasis. Should return owner, management and
+# classifiction society
 
 #####################################
 
 # Needs more resoucef that track company by imo
 # gisis.imo.org
+# marinetraffic.org
 
 ###########################
 import os

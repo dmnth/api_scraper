@@ -33,6 +33,8 @@ class Config(object):
     STORAGE_PATH = basedir + '/data'
     WORDLISTS_COUNTRY = basedir + '/mmsi_lists/by_country/'
     WORDLISTS_MASTER = basedir + '/mmsi_lists/master_list/'
-    DATA_DIR = basedir + 'data/'
+    DATA_DIR = basedir + '/data'
+    DB_URL = f'sqlite:////{basedir}/vessels.db'
+    VESSELS_DATA_PATH = basedir + '/vessels_by_country/'
 
 config = {'default': Config}
