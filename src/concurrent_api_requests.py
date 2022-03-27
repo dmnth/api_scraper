@@ -102,7 +102,7 @@ def make_requests(url, q):
          else:
             print("\nBad request")
     except ConnectionResetError as err:
-        print(f'well fuck, reset on {len(vessels)} vessel')
+        print(f'well duck, reset on {len(vessels)} vessel')
 
 
 
