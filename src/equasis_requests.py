@@ -18,8 +18,8 @@ updated_headers = {
 landing_page = eq_config.base_url + \
 'EquasisWeb/public/HomePage?fs=HomePage&P_ACTION=NEW_CONNECTION'
 login_page = eq_config.base_url + 'EquasisWeb/authen/HomePage?fs=HomePage'
-login_data = {'j_email': 'kborodin1@gmail.com',
-        'j_password': 'S00p@d00p@p00p@'}
+login_data = {'j_email': 'my_mail@gmail.com',
+        'j_password': 'muchsecure'}
 
 search_page = eq_config.base_url + 'EquasisWeb/restricted/Search?fs=HomePage'
 search_data = {
