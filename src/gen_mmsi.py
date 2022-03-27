@@ -22,18 +22,6 @@ import requests
 path_to_file = os.path.abspath('MIDs') + '/mids.json'
 print(path_to_file)
 # Thread MMSI gen
-'''
-fucking_dict = {
-        'Panama': {
-            'shortcuts': ['PA', 'PAN'],
-            'mid': [351, 352, 353],
-            },
-        'Venesuella': {
-            'shortcuts': ['VE', 'VEN'],
-            'mid': [445],
-            },
-        }
-'''
 
 url = 'https://www.vesselfinder.com/api/pub/click/'
 headers = {'User-Agent': "Mozilla/5.0"}
